@@ -23,6 +23,8 @@ a.bm{display:inline-flex;width:auto;padding:0 22px;cursor:grab}
 .drop{display:block;border:2px dashed var(--line);border-radius:12px;padding:18px;text-align:center;cursor:pointer;color:var(--mute)}
 .drop.on{border-color:var(--acc);background:var(--accbg)}
 .err{background:var(--redbg);color:var(--red);border-radius:10px;padding:8px 12px;margin-top:8px}
+.use{background:var(--ambbg);color:var(--ink);border-radius:10px;padding:10px 12px;margin-top:10px;font-size:15px}
+.use ol{margin:6px 0 0;padding-inline-start:22px}.use li{margin-bottom:4px}
 #out:empty{display:none}
 </style>
 </head>
@@ -37,20 +39,24 @@ a.bm{display:inline-flex;width:auto;padding:0 22px;cursor:grab}
     <button class="big" id="cp">1. להעתיק את קוד הסימניה</button>
     <div class="tabs"><button data-p="and" class="on">אנדרואיד</button><button data-p="ios">אייפון</button><button data-p="pc">מחשב</button></div>
     <div class="pane on" data-p="and"><ol>
-      <li>להיכנס לאתר <b>amiway.s-admin.co.il</b> ב-Chrome.</li>
-      <li>⋮ למעלה ← ☆ (הוספת סימניה). מיד מופיע למטה "ערוך", ללחוץ עליו.</li>
-      <li>שם: <b>חברותא</b>. בשדה הכתובת: למחוק הכל ולהדביק את הקוד. לשמור.</li>
+      <li>ב-Chrome, בכל דף שהוא (לא משנה איזה): ⋮ למעלה ← ☆ (הוספת סימניה). מיד מופיע למטה "ערוך", ללחוץ עליו.</li>
+      <li>שם: <b>חברותא</b>. בשדה הכתובת: למחוק הכל ולהדביק את הקוד (הוא מתחיל ב-javascript:). לשמור.</li>
     </ol>
-    <b>שימוש:</b> באתר, אחרי התחברות, לגעת בשורת הכתובת, לכתוב <b>חברותא</b>, ולבחור את הסימניה (עם הכוכב) מההצעות.</div>
+    <div class="use"><b>שימוש, חשוב:</b> באנדרואיד הסימניה <b>לא</b> עובדת כשפותחים אותה מרשימת הסימניות או מלשונית חדשה. רק כך:
+      <ol>
+        <li>נכנסים לאתר <b>amiway.s-admin.co.il</b> ומתחברים.</li>
+        <li>כשנמצאים באתר, נוגעים בשורת הכתובת למעלה.</li>
+        <li>כותבים <b>חברותא</b>.</li>
+        <li>ברשימה שנפתחת, נוגעים בשורה עם הכוכב ⭐ (לא בחיפוש בגוגל). הלוח נפתח מעל האתר.</li>
+      </ol></div></div>
     <div class="pane" data-p="ios"><ol>
-      <li>לפתוח את האתר <b>amiway.s-admin.co.il</b> בספארי.</li>
-      <li>כפתור השיתוף ⬆︎ ← "הוסף סימניה" ← שמירה.</li>
-      <li>📖 סימניות ← "ערוך" ← לבחור את הסימניה החדשה. שם: <b>חברותא</b>. בכתובת: למחוק הכל ולהדביק את הקוד.</li>
+      <li>בספארי, בכל דף שהוא: כפתור השיתוף ⬆︎ ← "הוסף סימניה" ← שמירה.</li>
+      <li>📖 סימניות ← "ערוך" ← לבחור את הסימניה החדשה. שם: <b>חברותא</b>. בכתובת: למחוק הכל ולהדביק את הקוד (הוא מתחיל ב-javascript:).</li>
     </ol>
-    <b>שימוש:</b> באתר, אחרי התחברות: 📖 ← חברותא.</div>
+    <div class="use"><b>שימוש:</b> נכנסים לאתר <b>amiway.s-admin.co.il</b> ומתחברים, ו<b>כשנמצאים באתר</b>: 📖 סימניות ← חברותא. מלשונית חדשה זה לא יעבוד.</div></div>
     <div class="pane" data-p="pc"><ol>
       <li>לגרור את הכפתור הזה לסרגל הסימניות (אם הסרגל מוסתר: Ctrl+Shift+B):<br>
-        <a class="big bm" href="javascript:(function(){var s=document.createElement(&#x27;script&#x27;);s.src=&#x27;https://ecohen100-collab.github.io/chavruta-tool/tool.js?v=&#x27;+Date.now();s.onerror=function(){alert(&#x27;הכלי לא נטען. אם יש אינטרנט, ייתכן שהאתר חוסם סקריפטים חיצוניים. אפשר להשתמש בדף ההתקנה (קובץ אקסל).&#x27;)};document.body.appendChild(s)})()" onclick="alert('לא ללחוץ כאן, אלא לגרור לסרגל הסימניות.');return false;">📊 חברותא</a></li>
+        <a class="big bm" href="javascript:(function(){var/**/s=document.createElement(&#x27;script&#x27;);s.src=&#x27;https://ecohen100-collab.github.io/chavruta-tool/tool.js?v=&#x27;+Date.now();s.onerror=function(){alert(&#x27;\u05d4\u05db\u05dc\u05d9\u0020\u05dc\u05d0\u0020\u05e0\u05d8\u05e2\u05df.\u0020\u05d0\u05dd\u0020\u05d9\u05e9\u0020\u05d0\u05d9\u05e0\u05d8\u05e8\u05e0\u05d8,\u0020\u05d9\u05d9\u05ea\u05db\u05df\u0020\u05e9\u05d4\u05d0\u05ea\u05e8\u0020\u05d7\u05d5\u05e1\u05dd\u0020\u05e1\u05e7\u05e8\u05d9\u05e4\u05d8\u05d9\u05dd\u0020\u05d7\u05d9\u05e6\u05d5\u05e0\u05d9\u05d9\u05dd.\u0020\u05d0\u05e4\u05e9\u05e8\u0020\u05dc\u05d4\u05e9\u05ea\u05de\u05e9\u0020\u05d1\u05d3\u05e3\u0020\u05d4\u05d4\u05ea\u05e7\u05e0\u05d4\u0020(\u05e7\u05d5\u05d1\u05e5\u0020\u05d0\u05e7\u05e1\u05dc).&#x27;)};document.body.appendChild(s)})()" onclick="alert('לא ללחוץ כאן, אלא לגרור לסרגל הסימניות.');return false;">📊 חברותא</a></li>
     </ol>
     <b>שימוש:</b> באתר, אחרי התחברות, ללחוץ על הסימניה.</div>
     <div class="small" style="margin-top:8px">הדפדפן זוכר את הסיסמה לאתר (כשהוא שואל, לאשר "שמור"). האתר מנתק אחרי כמה שעות. אז מתחברים שוב ולוחצים שוב על הסימניה.</div>
@@ -65,7 +71,7 @@ a.bm{display:inline-flex;width:auto;padding:0 22px;cursor:grab}
 </div>
 <div id="out"></div>
 </div>
-<textarea id="code" hidden>javascript:(function(){var s=document.createElement('script');s.src='https://ecohen100-collab.github.io/chavruta-tool/tool.js?v='+Date.now();s.onerror=function(){alert('הכלי לא נטען. אם יש אינטרנט, ייתכן שהאתר חוסם סקריפטים חיצוניים. אפשר להשתמש בדף ההתקנה (קובץ אקסל).')};document.body.appendChild(s)})()</textarea>
+<textarea id="code" hidden>javascript:(function(){var/**/s=document.createElement('script');s.src='https://ecohen100-collab.github.io/chavruta-tool/tool.js?v='+Date.now();s.onerror=function(){alert('\u05d4\u05db\u05dc\u05d9\u0020\u05dc\u05d0\u0020\u05e0\u05d8\u05e2\u05df.\u0020\u05d0\u05dd\u0020\u05d9\u05e9\u0020\u05d0\u05d9\u05e0\u05d8\u05e8\u05e0\u05d8,\u0020\u05d9\u05d9\u05ea\u05db\u05df\u0020\u05e9\u05d4\u05d0\u05ea\u05e8\u0020\u05d7\u05d5\u05e1\u05dd\u0020\u05e1\u05e7\u05e8\u05d9\u05e4\u05d8\u05d9\u05dd\u0020\u05d7\u05d9\u05e6\u05d5\u05e0\u05d9\u05d9\u05dd.\u0020\u05d0\u05e4\u05e9\u05e8\u0020\u05dc\u05d4\u05e9\u05ea\u05de\u05e9\u0020\u05d1\u05d3\u05e3\u0020\u05d4\u05d4\u05ea\u05e7\u05e0\u05d4\u0020(\u05e7\u05d5\u05d1\u05e5\u0020\u05d0\u05e7\u05e1\u05dc).')};document.body.appendChild(s)})()</textarea>
 <script>
 var CH = (function () {
 'use strict';
