@@ -16,6 +16,7 @@ later: ['חזרה כפי שסוכם', 'הי {שם},\nזה {אני} מדרך עמ
 free: ['הודעה חופשית', 'הי {שם},\n']
 };
 const SENT = 'נשלחה הודעה';
+const FEEDBACK_TO = '';
 const OUTCOMES = ['אין מענה', 'דיברנו, ממתין/ה לתשובה', 'נקבע ראיון', SENT, 'לא רלוונטי', 'אחר'];
 const fillTpl = (t, first, sign, when) => t.replace(/\{(שם|first|אני|me|מועד)\}/g, (m, k) => k === 'שם' || k === 'first' ? first : k === 'אני' || k === 'me' ? sign : when);
 const GROUPS = {
@@ -147,7 +148,7 @@ const ivOf = {}, slots = [];
 const at = withTime(date(x.date), x.startTime);
 const who = norm(x.publicTag) || UM[x.interviewerId] || '';
 const ls = x.leads || [];
-slots.push({ at, who, whoId: x.interviewerId || null, names: ls.map(l => unq(l.name)), keys: ls.map(l => String(l.id)) });
+slots.push({ at, end: withTime(date(x.date), x.endTime), dir: unq(x.directions || ''), link: unq(x.link || ''), who, whoId: x.interviewerId || null, names: ls.map(l => unq(l.name)), keys: ls.map(l => String(l.id)) });
 ls.forEach(l => { const p = ivOf[l.id]; if (!p || (at && (!p.at || at > p.at))) ivOf[l.id] = { at, who, whoId: x.interviewerId || null }; });
 });
 const leads = LA.filter(l => !l.isDeleted).map(l => {
@@ -229,7 +230,7 @@ const norm = tagNormalizer(ivRows.map(r => r['תג חשוף'] || r['מראיין
 ivRows.forEach(r => {
 const at = date(r['התחלה']) || withTime(date(r['תאריך']), r['שעה']), who = norm(r['תג חשוף'] || r['מראיין'] || '');
 const names = String(r['סטודנטים'] || '').split(',').map(s => s.trim()).filter(Boolean);
-slots.push({ at, who, whoId: null, names, keys: names.map(nkey) });
+slots.push({ at, end: date(r['סיום']), dir: unq(r['הנחיות'] || ''), link: '', who, whoId: null, names, keys: names.map(nkey) });
 names.forEach(n => { const k = nkey(n), p = ivOf[k]; if (!p || (at && (!p.at || at > p.at))) ivOf[k] = { at, who }; });
 });
 const future = ivRows.filter(r => { const d = date(r['תאריך']); return d && d >= day0(new Date()); }).length;
@@ -257,7 +258,7 @@ leads.forEach(l => { const r = nkey(l.last + ' ' + l.first); if (!(r in idx)) id
 const missed = new Set();
 slots.forEach(s => s.keys = s.keys.map(k => { if (idx[k]) return idx[k]; missed.add(k); return k; }));
 if (missed.size) warn.push(missed.size + ' שמות בקובץ הראיונות לא הותאמו לאף ליד');
-if (!ivRows) leads.filter(l => l.ivAt).forEach(l => slots.push({ at: l.ivAt, who: '', whoId: null, names: [l.name], keys: [l.key] }));
+if (!ivRows) leads.filter(l => l.ivAt).forEach(l => slots.push({ at: l.ivAt, end: null, dir: '', link: '', who: '', whoId: null, names: [l.name], keys: [l.key] }));
 return { source: 'אקסל: ' + leadsName + (ivName ? ' + ' + ivName : ''), at: new Date(), year: leads[0] && leads[0].year, leads, slots, warn, noIvFile: !ivRows, users: {} };
 }
 function flag(l) {
@@ -396,7 +397,8 @@ details.tp>summary{display:flex;align-items:center;justify-content:space-between
 details.tp>summary::-webkit-details-marker{display:none}
 details.tp>summary .chev{color:var(--mute);transition:transform .15s}
 details.tp[open]>summary .chev{transform:rotate(180deg)}
-details.tp textarea{width:100%;min-height:150px;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--card);resize:vertical}
+details.tp textarea,textarea.fb{width:100%;min-height:150px;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--card);resize:vertical}
+textarea.fb{min-height:100px;margin-bottom:8px}
 .foot{margin:10px 2px}
 .btns.two{grid-template-columns:1fr 1fr}
 .sheet{position:fixed;inset:0;z-index:9;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
@@ -574,8 +576,9 @@ function ivRow(r, showWho) {
 const { s, l, n } = r, fl = l ? flag(l) : { f: '', why: '' }, blk = fl.f === 'block', g = blk ? esc(fl.why) : '';
 return `<div class="slot"><div class="top"><span class="tm">${hm(s.at) || '--:--'}</span><span class="nm">${esc(n)}</span>${l && l.tech ? '<span class="tag t">טכניון</span>' : ''}${l && l.phone ? `<a class="ph" href="tel:${esc(l.phone)}">${esc(l.phone)}</a>` : ''}${showWho && s.who ? `<span class="who">${esc(s.who)}</span>` : ''}</div>
 ${fl.f ? `<div class="fl ${blk ? 'fb' : 'fw'}">${blk ? '⛔ לא לפנות כרגע: ' : '⚠️ בזהירות: '}${esc(fl.why)}</div>` : ''}
-<div class="btns two">${l && l.phone ? `<a class="b call${blk ? ' off' : ''}" href="tel:${esc(l.phone)}" data-guard="${g}">📞 התקשר</a>
-<button class="b msg${blk ? ' off' : ''}" data-msg="${esc(l.key)}" data-tpl="ivr" data-at="${+s.at}" data-guard="${g}">💬 תזכורת לראיון</button>` : '<span class="b off">אין טלפון</span><span></span>'}</div></div>`;
+<div class="btns">${l && l.phone ? `<a class="b call${blk ? ' off' : ''}" href="tel:${esc(l.phone)}" data-guard="${g}">📞 התקשר</a>
+<button class="b msg${blk ? ' off' : ''}" data-msg="${esc(l.key)}" data-tpl="ivr" data-at="${+s.at}" data-guard="${g}">💬 תזכורת</button>` : '<span class="b off">אין טלפון</span><span></span>'}
+<button class="b" data-cal="${esc(l ? l.key : '')}" data-at="${+s.at}" data-n="${esc(n)}">📆 ליומן</button></div></div>`;
 }
 function ivView(id, f) {
 if (id === 'myIv' && !me) return { n: 0, html: '<div class="note">כדי לראות את הראיונות שלך צריך קודם לבחור מי אני. <button class="lnk" data-go="settings">⚙ הגדרות</button></div>' };
@@ -704,6 +707,7 @@ return `<div class="sec"><h2>אני</h2><div data-sec="me">${idHtml()}</div></di
 <div class="sec"><h2>מה מופיע במסך הבית</h2><div data-sec="groups"></div></div>
 <div class="sec" data-sec="opts"></div>
 <div class="sec"><h2>נוסחי ההודעות</h2><div class="small" style="margin-bottom:6px">{שם} = השם הפרטי · {אני} = החתימה שלך · {מועד} = יום ושעת הראיון</div>${Object.keys(TPL).map(k => `<details class="tp" data-tp="${k}"><summary><span>${esc(TPL[k][0])}</span><span class="chev">⌄</span></summary><textarea></textarea><div class="btns two"><button class="b msg" data-tsave="${k}">שמירה</button><button class="b" data-treset="${k}">החזרה למקור</button></div></details>`).join('')}</div>
+<div class="sec"><h2>הערה על הכלי</h2><div class="small" style="margin-bottom:6px">משהו לא עובד, חסר או מבלבל? לכתוב כאן ולשלוח בוואטסאפ.</div><textarea class="fb" data-fb placeholder="מה כדאי לשפר?"></textarea><a class="b msg wide" data-fbsend target="_blank" rel="noopener" href="#">💬 שליחת ההערה בוואטסאפ</a></div>
 <div class="small foot">ההגדרות, הסימונים והנוסחים נשמרים רק בטלפון הזה.</div>
 <div class="small foot">${d.leads.length} לידים בנתונים · הכלי רק קורא, לא משנה כלום באתר ולא שולח נתונים לשום מקום.</div>`;
 }
@@ -783,7 +787,7 @@ sheet(`<h3><span>הודעה ל${esc(l.name)}</span><button class="ib" data-close
 <div class="chips">${Object.keys(TPL).map(k => `<button class="chip${k === tpl ? ' on' : ''}" data-k="${k}">${esc(TPL[k][0])}</button>`).join('')}</div>
 <textarea></textarea>
 <div class="btns"><a class="b msg" data-wa target="_blank" rel="noopener">וואטסאפ</a><a class="b" data-sms>SMS</a></div>
-<button class="lnk" data-cfg>לעריכת הנוסחים: ⚙ הגדרות</button>
+<button class="lnk" data-cfg>✏️ לערוך את הנוסח הזה (נשמר רק אצלך)</button>
 <div class="small">ההודעה לא נשלחת מכאן. נפתח וואטסאפ עם הטקסט, ושם לוחצים "שלח".</div>`, s => {
 ta = s.querySelector('textarea');
 const wa = s.querySelector('[data-wa]'), sms = s.querySelector('[data-sms]');
@@ -802,10 +806,53 @@ let ok = false;
 try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(noteFor(SENT)).then(() => { ok = true; }, () => { }); } catch (e) { }
 setTimeout(() => { s.remove(); markDone(l, SENT, { copied: ok }); }, 300);
 }));
-s.querySelector('[data-cfg]').onclick = () => { if (!can()) return; s.remove(); go('settings'); };
+s.querySelector('[data-cfg]').onclick = () => {
+if (!can()) return;
+s.remove(); go('settings');
+const det = main.querySelector('[data-tp="' + k + '"]');
+if (det) { det.open = true; det.scrollIntoView({ block: 'center' }); }
+};
 choose(k);
 }, can);
 }
+const icsT = x => x.getFullYear() + pad(x.getMonth() + 1) + pad(x.getDate()) + 'T' + pad(x.getHours()) + pad(x.getMinutes()) + '00';
+const icsEsc = t => String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const icsFold = line => (line.match(/.{1,40}/gu) || ['']).join('\r\n ');   // שורות קצרות (עברית = 2 בתים לתו)
+function calSheet(key, at, n) {
+const l = byKey[key] || null;
+const s = d.slots.find(x => x.at && +x.at === at && (!l || x.keys.includes(key))) || { who: '', dir: '', link: '', end: null };
+const start = new Date(at), end = s.end && s.end > start ? s.end : new Date(at + 20 * 6e4);
+const title = 'ראיון חברותא: ' + (l ? l.name : n);
+const lines = [];
+if (l && l.phone) lines.push('טלפון: ' + l.phone, 'וואטסאפ: https://wa.me/972' + l.phone.replace(/^0/, ''));
+if (l && l.inst) lines.push('מוסד: ' + l.inst);
+if (s.who) lines.push('מראיין: ' + s.who);
+if (s.dir) lines.push('הנחיות: ' + s.dir);
+if (s.link) lines.push('קישור: ' + s.link);
+const details = lines.join('\n');
+const gcal = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(title) +
+'&dates=' + icsT(start) + '/' + icsT(end) + '&ctz=Asia/Jerusalem&details=' + encodeURIComponent(details) +
+(s.link ? '&location=' + encodeURIComponent(s.link) : '');
+sheet(`<h3><span>📆 ${esc(title)}</span><button class="ib" data-close>✕</button></h3>
+<div class="small" style="margin-bottom:10px">יום ${WD[start.getDay()]} ${dm(start)}, ${hm(start)}-${hm(end)}${s.who ? ' · ' + esc(s.who) : ''}</div>
+<div class="btns two"><a class="b msg" target="_blank" rel="noopener" href="${esc(gcal)}">יומן Google</a><button class="b" data-ics>קובץ ליומן (אייפון / אחר)</button></div>
+<div class="small">ביומן Google נפתח אירוע מוכן, ולוחצים "שמירה". הקובץ נפתח ביומן של הטלפון.</div>`, sh => {
+sh.querySelector('[data-ics]').onclick = () => {
+const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//chavruta-tool//he', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
+'UID:chv-' + (key || 'x') + '-' + at + '@chavruta-tool',
+'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''),
+'DTSTART:' + icsT(start), 'DTEND:' + icsT(end), 'SUMMARY:' + icsEsc(title), 'DESCRIPTION:' + icsEsc(details)]
+.concat(s.link ? ['LOCATION:' + icsEsc(s.link)] : [], ['END:VEVENT', 'END:VCALENDAR']).map(icsFold).join('\r\n');
+try {
+const a = document.createElement('a');
+a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+a.download = 'ראיון.ics'; sh.appendChild(a); a.click();
+setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
+} catch (e) { toast('לא הצלחתי ליצור את הקובץ'); }
+};
+});
+}
+const fbHref = t => 'https://wa.me/' + FEEDBACK_TO + '?text=' + encodeURIComponent('הערה על כלי הרישום של החברותא' + (me ? ' (מאת ' + me.name + ')' : '') + ':\n' + t);
 const hist = sub => { if (!opt.useHistory) return; try { history.pushState(sub ? { chv: 1, sub: 1 } : { chv: 1 }, '', location.href); } catch (e) { } };
 let ready = false;
 function go(screen, group) {
@@ -831,6 +878,7 @@ return false;
 const uiBack = () => { if (opt.useHistory && history.state && history.state.sub) history.back(); else home(); };
 root.addEventListener('input', e => {
 const t = e.target;
+if (t.matches && t.matches('[data-fb]')) { const a = main.querySelector('[data-fbsend]'); if (a) a.href = fbHref(t.value.trim()); return; }
 if (!t.matches || !t.matches('[data-q]')) return;
 const q = t.value.trim(), qd = digitsQ(q);
 if (t.dataset.q === 'h') { st.hq = q; st.hqd = qd; drawHome(); }
@@ -847,10 +895,17 @@ saveSettings(); fillGroups();
 } else if (t.matches('[data-opt]')) { settings[t.dataset.opt] = t.checked; saveSettings(); }
 });
 root.addEventListener('click', e => {
-const t = e.target.closest('[data-g],[data-go],[data-back],[data-x],[data-reload],[data-role],[data-up],[data-dn],[data-tech],[data-mine],[data-tsave],[data-treset],[data-msg],[data-done],a.call');
+const t = e.target.closest('[data-g],[data-go],[data-back],[data-x],[data-reload],[data-role],[data-up],[data-dn],[data-tech],[data-mine],[data-tsave],[data-treset],[data-msg],[data-done],[data-cal],[data-fbsend],a.call');
 if (!t || t.closest('.sheet')) return;
 if (t.dataset.guard && !confirm('לא לפנות כרגע:\n' + t.dataset.guard + '\n\nלהמשיך בכל זאת?')) { e.preventDefault(); return; }
-if (t.hasAttribute('data-msg')) msgSheet(byKey[t.dataset.msg], t.dataset.tpl, t.dataset.at ? +t.dataset.at : 0);
+if (t.hasAttribute('data-fbsend')) {
+const v = (main.querySelector('[data-fb]') || {}).value || '';
+if (!v.trim()) { e.preventDefault(); toast('קודם לכתוב את ההערה'); return; }
+t.href = fbHref(v.trim());   // הקישור נפתח בלחיצה עצמה (ברירת המחדל של <a>)
+return;
+}
+if (t.hasAttribute('data-cal')) calSheet(t.dataset.cal, +t.dataset.at, t.dataset.n || '');
+else if (t.hasAttribute('data-msg')) msgSheet(byKey[t.dataset.msg], t.dataset.tpl, t.dataset.at ? +t.dataset.at : 0);
 else if (t.hasAttribute('data-done')) doneSheet(byKey[t.dataset.done]);
 else if (t.hasAttribute('data-g')) go('group', t.dataset.g);
 else if (t.hasAttribute('data-go')) go(t.dataset.go);
