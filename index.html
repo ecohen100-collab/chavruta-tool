@@ -82,6 +82,7 @@ const TPL = {
 reg: ['השלמת רישום', 'הי {שם},\nמה נשמע? זה {אני} מדרך עמי בטכניון 🙂\n\nראיתי שעדיין לא השלמת רישום..\nאם צריך עזרה או משהו אני פה לכל עזרה ושאלה\nhttps://students.amiway.s-admin.co.il/'],
 new: ['היכרות לליד חדש', 'הי {שם},\nמה נשמע? זה {אני} מדרך עמי בטכניון 🙂\n\nראיתי שהתעניינת בתוכנית החברותא. אשמח לספר לך עליה ולקבוע שיחה קצרה.\nמתי נוח לך?'],
 ivr: ['תזכורת לראיון', 'הי {שם},\nזה {אני} מדרך עמי בטכניון 🙂\nרק תזכורת: נקבע לך ראיון היכרות {מועד}.\nאם משהו השתנה, אפשר לכתוב לי כאן.'],
+ivday: ['יום הראיון (זום)', 'שלום {שם},\nאני {אני}, מדרך עמ"י - חברותא בטכניון.\nמה שלומך?\nיש לנו ראיון {מועד}.\nלקראת הראיון אשלח קישור לזום מכאן.\nלהתראות 🙂'],
 iv: ['קביעת ראיון', 'הי {שם},\nזה {אני} מדרך עמי בטכניון 🙂\n\nרציתי לקבוע איתך ראיון היכרות קצר לתוכנית.\nאיזה יום ושעה נוחים לך בימים הקרובים?'],
 noans: ['אין מענה בטלפון', 'הי {שם},\nזה {אני} מדרך עמי בטכניון 🙂\nניסיתי להשיג אותך בטלפון לגבי תוכנית החברותא.\nמתי נוח שנדבר?'],
 later: ['חזרה כפי שסוכם', 'הי {שם},\nזה {אני} מדרך עמי בטכניון 🙂\nרציתי לחזור אליך כמו שדיברנו לגבי תוכנית החברותא. זה עדיין רלוונטי?'],
@@ -119,7 +120,9 @@ let home = Array.isArray(s.home) ? s.home.filter((g, i, a) => GIDS.includes(g) &
 if (!home.length) home = HOME_BY_ROLE[role].slice();
 return { role, home, techDefault: s.techDefault !== false, mineOnly: s.mineOnly !== false, hideFr: s.hideFr !== false };
 }
-const BLOCK = /תקלה|בעיה טכנית|בעיות טכניות|תמיכה|אישור מדרך|שנה שלישית|אישור חריג|חריגה/;
+const BLOCK = /תקלה|בעיה טכנית|בעיות טכניות|תמיכה|אישור מדרך/;
+const Y3 = /שנה שלישית|שנה ג'|אישור חריג|חריגה/;
+const ageOf = b => { if (!b) return null; const n = new Date(); let a = n.getFullYear() - b.getFullYear(); if (n < new Date(n.getFullYear(), b.getMonth(), b.getDate())) a--; return a > 0 && a < 120 ? a : null; };
 const WARN = /מילואים|חו"ל|חו״ל|להתלבט|מתלבט|לחשוב על זה/;
 const REMIND = /תזכורת|שלחתי|שלחה|נשלחה/;
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -236,7 +239,7 @@ status: unq(so.title || String(l.status)), nr: !!so.notRelevant, sub: unq(SUB[St
 reg: signed ? 'רשום' : (date(l.lastLoginTime) ? 'התחבר, לא חתם' : 'טרם התחבר'),
 created: date(l.createTime), ivAt: own || iv.at || null, ivDone: date(l.attendedDate) ? 'התקיים' : '',
 ivWho: iv.who || '', ivWhoId: iv.whoId || null, handler: UM[l.handlerId] || '', handlerId: l.handlerId || null,
-accepted: date(l.acceptedDate), signed, registered: !!signed, remark: unq(l.remark), year: l.year, fr: FR.test(unq(l.aliyahCountry))
+accepted: date(l.acceptedDate), signed, registered: !!signed, remark: unq(l.remark), year: l.year, fr: FR.test(unq(l.aliyahCountry)), age: ageOf(date(l.birthday)), city: unq(l.city)
 };
 });
 return { source: 'האתר', at: new Date(), year: leads[0] && leads[0].year, leads, slots, warn, partial, users: UM };
@@ -322,7 +325,7 @@ status, nr: NR_NAMES.includes(status), sub: r['סטטוס משני'] || '', reg,
 created: date(r['זמן הוספה']), ivAt: date(r['מועד ראיון']) || iv.at || null, ivDone: /^\s*בוצע/.test(r['ביצוע ראיון'] || '') ? 'התקיים' : '',
 ivWho: iv.who || '', ivWhoId: null, handler: r['גורם מטפל'] || '', handlerId: null,
 accepted: date(r['תאריך קבלה']), signed, registered: reg === 'רשום' || !!signed,
-remark: r['הערה'] || '', year: r['תכנית'] || '', fr: FR.test(r['ארץ עלייה'] || '')
+remark: r['הערה'] || '', year: r['תכנית'] || '', fr: FR.test(r['ארץ עלייה'] || ''), age: ageOf(date(r['תאריך לידה'])), city: r['עיר מגורים'] || ''
 };
 });
 const idx = Object.create(null);
@@ -413,7 +416,7 @@ h2 .n{font-size:13px;color:var(--mute);font-weight:400}
 .why{margin-top:4px;font-size:15px}
 .meta{font-size:13px;color:var(--mute);margin-top:2px}
 .fl{font-size:13px;margin-top:6px;padding:4px 8px;border-radius:8px}
-.fl.fb{background:var(--redbg);color:var(--red)}.fl.fw{background:var(--ambbg);color:var(--amb)}
+.fl.fb{background:var(--redbg);color:var(--red)}.fl.fi{background:var(--accbg);color:var(--acc)}.fl.fw{background:var(--ambbg);color:var(--amb)}
 .dn{font-size:13px;margin-top:6px;color:var(--grn)}
 details.rem{margin-top:6px;font-size:14px}
 details.rem summary{cursor:pointer;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -549,6 +552,8 @@ const extraTags = l => (l.isNew ? '<span class="tag g">חדש</span>' : '') + (l
 (l.dup ? '<span class="tag a">מופיע/ה פעמיים</span>' : '') +
 (showH() && l.handler ? `<span class="tag">מטפל/ת: ${esc(l.handler)}</span>` : '') +
 (!showH() && isFree(l) && !isMine(l) ? `<span class="tag">${settings.role === 'int' ? 'עוד בלי מראיין' : 'בלי גורם מטפל'}</span>` : '');
+const y3 = l => l && Y3.test(l.remark) ? '<div class="fl fi">ℹ️ שנה שלישית: כנראה לא נוכל לשלוח קישור לרישום (צריך אישור חריג), אבל כן מראיינים.</div>' : '';
+const personLine = l => [l.age ? 'גיל ' + l.age : '', l.city ? 'מ' + l.city : '', l.inst].filter(Boolean).join(' · ');
 const rem = l => l.remark ? `<details class="rem"><summary>📝 ${esc(l.remark.split('\n')[0])}</summary><div>${esc(l.remark)}</div></details>` : '';
 function card(l, whyHtml, tpl, fl, meta) {
 fl = fl || flag(l);
@@ -559,7 +564,7 @@ ${whyHtml ? `<div class="why">${whyHtml}</div>` : ''}
 ${meta ? `<div class="meta">${meta}</div>` : ''}
 ${fl.f ? `<div class="fl ${fl.f === 'block' ? 'fb' : 'fw'}">${fl.f === 'block' ? '⛔ לא לפנות כרגע: ' : '⚠️ בזהירות: '}${esc(fl.why)}</div>` : ''}
 ${dn ? `<div class="dn">✓ סימנת ${dm(new Date(dn.t))} ${hm(new Date(dn.t))}: ${esc(dn.o)}</div>` : ''}
-${rem(l)}
+${y3(l)}${rem(l)}
 <div class="btns">${l.phone ? `<a class="b call${off}" href="tel:${esc(l.phone)}" data-guard="${fl.f === 'block' ? esc(fl.why) : ''}">📞 התקשר</a>
 <button class="b msg${off}" data-msg="${esc(l.key)}" data-tpl="${tpl}" data-guard="${fl.f === 'block' ? esc(fl.why) : ''}">💬 הודעה</button>` :
 '<span class="b off">אין טלפון</span><span></span>'}
@@ -649,9 +654,11 @@ const s = stats[n]; return `<tr><td>${esc(n)}</td><td>${s.all}</td><td>${s.st}</
 function ivRow(r, showWho) {
 const { s, l, n } = r, fl = l ? flag(l) : { f: '', why: '' }, blk = fl.f === 'block', g = blk ? esc(fl.why) : '';
 return `<div class="slot"><div class="top"><span class="tm">${hm(s.at) || '--:--'}</span><span class="nm">${esc(n)}</span>${l && l.tech ? '<span class="tag t">טכניון</span>' : ''}${l && l.phone ? `<a class="ph" href="tel:${esc(l.phone)}">${esc(l.phone)}</a>` : ''}${showWho && s.who ? `<span class="who">${esc(s.who)}</span>` : ''}</div>
+${l && personLine(l) ? `<div class="meta">${esc(personLine(l))}</div>` : ''}
 ${fl.f ? `<div class="fl ${blk ? 'fb' : 'fw'}">${blk ? '⛔ לא לפנות כרגע: ' : '⚠️ בזהירות: '}${esc(fl.why)}</div>` : ''}
+${l ? y3(l) + rem(l) : ''}
 <div class="btns">${l && l.phone ? `<a class="b call${blk ? ' off' : ''}" href="tel:${esc(l.phone)}" data-guard="${g}">📞 התקשר</a>
-<button class="b msg${blk ? ' off' : ''}" data-msg="${esc(l.key)}" data-tpl="ivr" data-at="${+s.at}" data-guard="${g}">💬 תזכורת</button>` : '<span class="b off">אין טלפון</span><span></span>'}
+<button class="b msg${blk ? ' off' : ''}" data-msg="${esc(l.key)}" data-tpl="${+day0(s.at) === +today ? 'ivday' : 'ivr'}" data-at="${+s.at}" data-guard="${g}">${+day0(s.at) === +today ? '💬 יום הראיון' : '💬 תזכורת'}</button>` : '<span class="b off">אין טלפון</span><span></span>'}
 <button class="b" data-cal="${esc(l ? l.key : '')}" data-at="${+s.at}" data-n="${esc(n)}">📆 ליומן</button></div></div>`;
 }
 function ivView(id, f) {
@@ -897,13 +904,17 @@ function calSheet(key, at, n) {
 const l = byKey[key] || null;
 const s = d.slots.find(x => x.at && +x.at === at && (!l || x.keys.includes(key))) || { who: '', dir: '', link: '', end: null };
 const start = new Date(at), end = s.end && s.end > start ? s.end : new Date(at + 20 * 6e4);
-const title = 'ראיון חברותא: ' + (l ? l.name : n);
+const title = 'ראיון דרך עמ"י: ' + (l ? l.name : n);
 const lines = [];
-if (l && l.phone) lines.push('טלפון: ' + l.phone, 'וואטסאפ: https://wa.me/972' + l.phone.replace(/^0/, ''));
-if (l && l.inst) lines.push('מוסד: ' + l.inst);
+const first = l ? (l.first || l.name.split(' ')[0]) : String(n).split(' ')[0];
+const dayMsg = fillTpl(tpls().ivday, first, me ? me.sign : '', 'היום בשעה ' + hm(start));
+if (l && personLine(l)) lines.push(personLine(l));
+if (l && l.phone) lines.push('טלפון: ' + l.phone, 'וואטסאפ עם הודעת יום הראיון: https://wa.me/972' + l.phone.replace(/^0/, '') + '?text=' + encodeURIComponent(dayMsg));
 if (s.who) lines.push('מראיין: ' + s.who);
 if (s.dir) lines.push('הנחיות: ' + s.dir);
 if (s.link) lines.push('קישור: ' + s.link);
+if (l && Y3.test(l.remark)) lines.push('שנה שלישית: כנראה לא נוכל לשלוח קישור לרישום, אבל כן מראיינים.');
+if (l && l.remark) lines.push('', 'הערה בליד: ' + l.remark);
 const details = lines.join('\n');
 const gcal = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(title) +
 '&dates=' + icsT(start) + '/' + icsT(end) + '&ctz=Asia/Jerusalem&details=' + encodeURIComponent(details) +
