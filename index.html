@@ -88,6 +88,7 @@ later: ['חזרה כפי שסוכם', 'הי {שם},\nזה {אני} מדרך עמ
 free: ['הודעה חופשית', 'הי {שם},\n']
 };
 const SENT = 'נשלחה הודעה';
+const FR = /צרפת|france/i;
 const FEEDBACK_TO = '';
 const OUTCOMES = ['אין מענה', 'דיברנו, ממתין/ה לתשובה', 'נקבע ראיון', SENT, 'לא רלוונטי', 'אחר'];
 const fillTpl = (t, first, sign, when) => t.replace(/\{(שם|first|אני|me|מועד)\}/g, (m, k) => k === 'שם' || k === 'first' ? first : k === 'אני' || k === 'me' ? sign : when);
@@ -116,7 +117,7 @@ const s = LS.get(SKEY, null) || {};
 const role = s.role === 'tel' || s.role === 'int' ? s.role : '';
 let home = Array.isArray(s.home) ? s.home.filter((g, i, a) => GIDS.includes(g) && a.indexOf(g) === i) : [];
 if (!home.length) home = HOME_BY_ROLE[role].slice();
-return { role, home, techDefault: s.techDefault !== false, mineOnly: s.mineOnly !== false };
+return { role, home, techDefault: s.techDefault !== false, mineOnly: s.mineOnly !== false, hideFr: s.hideFr !== false };
 }
 const BLOCK = /תקלה|בעיה טכנית|בעיות טכניות|תמיכה|אישור מדרך|שנה שלישית|אישור חריג|חריגה/;
 const WARN = /מילואים|חו"ל|חו״ל|להתלבט|מתלבט|לחשוב על זה/;
@@ -235,7 +236,7 @@ status: unq(so.title || String(l.status)), nr: !!so.notRelevant, sub: unq(SUB[St
 reg: signed ? 'רשום' : (date(l.lastLoginTime) ? 'התחבר, לא חתם' : 'טרם התחבר'),
 created: date(l.createTime), ivAt: own || iv.at || null, ivDone: date(l.attendedDate) ? 'התקיים' : '',
 ivWho: iv.who || '', ivWhoId: iv.whoId || null, handler: UM[l.handlerId] || '', handlerId: l.handlerId || null,
-accepted: date(l.acceptedDate), signed, registered: !!signed, remark: unq(l.remark), year: l.year
+accepted: date(l.acceptedDate), signed, registered: !!signed, remark: unq(l.remark), year: l.year, fr: FR.test(unq(l.aliyahCountry))
 };
 });
 return { source: 'האתר', at: new Date(), year: leads[0] && leads[0].year, leads, slots, warn, partial, users: UM };
@@ -321,7 +322,7 @@ status, nr: NR_NAMES.includes(status), sub: r['סטטוס משני'] || '', reg,
 created: date(r['זמן הוספה']), ivAt: date(r['מועד ראיון']) || iv.at || null, ivDone: /^\s*בוצע/.test(r['ביצוע ראיון'] || '') ? 'התקיים' : '',
 ivWho: iv.who || '', ivWhoId: null, handler: r['גורם מטפל'] || '', handlerId: null,
 accepted: date(r['תאריך קבלה']), signed, registered: reg === 'רשום' || !!signed,
-remark: r['הערה'] || '', year: r['תכנית'] || ''
+remark: r['הערה'] || '', year: r['תכנית'] || '', fr: FR.test(r['ארץ עלייה'] || '')
 };
 });
 const idx = Object.create(null);
@@ -540,7 +541,7 @@ const s = raw.replace(/^(00)?972/, '0');
 return s.length > 1 ? s : '';
 };
 const qOkF = (l, f) => !f.q || (l.name + ' ' + l.phone + ' ' + l.inst + ' ' + l.ivWho + ' ' + l.handler).includes(f.q) || (!!f.qd && l.phone.includes(f.qd));
-const passF = (l, f, ignoreMine) => (!f.tech || l.tech) && (ignoreMine || !f.mine || !me || isMine(l) || isFree(l)) && qOkF(l, f);
+const passF = (l, f, ignoreMine) => (!settings.hideFr || !l.fr) && (!f.tech || l.tech) && (ignoreMine || !f.mine || !me || isMine(l) || isFree(l)) && qOkF(l, f);
 const doneToday = l => { const x = done[l.key]; return x && now - x.t < 16 * 36e5 ? x : null; };
 const instTag = l => l.tech ? '<span class="tag t">לומד/ת בטכניון</span>' : l.inst ? `<span class="tag">${esc(l.inst)}</span>` : '';
 const showH = () => !(st.screen === 'group' && st.f && st.f.mine);
@@ -593,6 +594,7 @@ if (!s.names.length) { if (!people) D.free++; return; }
 s.names.forEach((n, i) => {
 const l = byKey[s.keys[i]];
 if (f.tech && !(l && l.tech)) return;
+if (settings.hideFr && l && l.fr) return;
 if (f.q && !(n + ' ' + s.who + ' ' + (l ? l.phone : '')).includes(f.q) && !(f.qd && l && l.phone.includes(f.qd))) return;
 D.rows.push({ s, l, n });
 });
@@ -792,6 +794,7 @@ box.innerHTML = en.map((g, i) => grRow(g, true, i, en.length)).join('') + GIDS.f
 function fillOpts() {
 const box = main.querySelector('[data-sec=opts]'); if (!box) return;
 box.innerHTML = `<label class="chk"><input type="checkbox" data-opt="techDefault"${settings.techDefault ? ' checked' : ''}><span>בלידים חדשים, להתחיל עם 'רק טכניון'</span></label>
+<label class="chk"><input type="checkbox" data-opt="hideFr"${settings.hideFr ? ' checked' : ''}><span>להסתיר עולים מצרפת (מסלול נפרד)</span></label>
 <label class="chk"><input type="checkbox" data-opt="mineOnly"${settings.mineOnly ? ' checked' : ''}${me ? '' : ' disabled'}><span>בקבוצות, להתחיל עם 'רק שלי'${me ? '' : ' <span class="small">(קודם לבחור מי אני)</span>'}</span></label>`;
 }
 function wireSettings() {
