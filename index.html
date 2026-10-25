@@ -90,7 +90,7 @@ free: ['הודעה חופשית', 'הי {שם},\n']
 };
 const SENT = 'נשלחה הודעה';
 const FR = /צרפת|france/i;
-const FEEDBACK_TO = '';
+const FEEDBACK_TO = '972585858432';   // מנהל הכלי, באישורו (25.10.2026)
 const OUTCOMES = ['אין מענה', 'דיברנו, ממתין/ה לתשובה', 'נקבע ראיון', SENT, 'לא רלוונטי', 'אחר'];
 const fillTpl = (t, first, sign, when) => t.replace(/\{(שם|first|אני|me|מועד)\}/g, (m, k) => k === 'שם' || k === 'first' ? first : k === 'אני' || k === 'me' ? sign : when);
 const GROUPS = {
